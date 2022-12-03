@@ -22,10 +22,10 @@ public class Comic {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int color = processor.get(x, y);
-                int b = color & 0xFF;
-                int g = (color >> 8) & 0xFF;
-                int r = (color >> 16) & 0xFF;
-                int grayLevel = Byte.MAX_VALUE - (r + g + b) / 3;
+                int b = color & 255;
+                int g = (color >> 8) & 255;
+                int r = (color >> 16) & 255;
+                int grayLevel = 255 - (r + g + b) / 3;
                 byteProc.set(x, y, grayLevel);
             }
         }
@@ -162,7 +162,7 @@ public class Comic {
             ByteProcessor byteProc = convertRGBtoGray(colorProcessor);
 
             BinaryProcessor binary = PercentileBinarize(byteProc,
-                                    PERCENTILE_THRESHOLD);
+                                PERCENTILE_THRESHOLD);
 
             // Here I have tried morphological operators on binary:
             // binary.dilate();
@@ -203,7 +203,7 @@ public class Comic {
                 dir.mkdirs();
             }
 
-            ImagePlus img = new ImagePlus("", binary);
+            ImagePlus img = new ImagePlus("", byteProc);
             FileSaver fs = new FileSaver(img);
             fs.saveAsJpeg(prefix + "gray.jpg");
             for(Map.Entry<Long,Trail> entry: images.entrySet()){
@@ -212,7 +212,7 @@ public class Comic {
                 printTrail(imgProcessor, trail, prefix);
                 printGray(binary, trail, prefix);
 
-                System.out.format("%d, ", trail.id);
+                System.out.format("%05d, ", trail.id);
                 System.out.format("%013d, ", trail.key);
                 System.out.format("%d, ", trail.boundingBoxWidth);
                 System.out.format("%d, ", trail.boundingBoxHeight);

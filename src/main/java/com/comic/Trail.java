@@ -24,6 +24,7 @@ public class Trail{
     double areaRatio = 0.0;
     int first[];
     int last[];
+    //TODO: consider deleteing delta
     int delta[];
     int id = 0;
     int count = 0;
@@ -131,9 +132,9 @@ public class Trail{
 
     public void boundingBox(Set<Integer> trail, int width, int height){
         xmax = 0;
-        xmax = 0;
-        xmax = width - 1;
-        xmax = height - 1;
+        ymax = 0;
+        xmin = width - 1;
+        ymin = height - 1;
         for(int i:trail){
             int x = i % width;
             int y = i / width;
