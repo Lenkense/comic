@@ -1,0 +1,5 @@
+target/test-classes/com/comic/AppTest.class
+target/comic-1.0.jar
+target/classes/com/comic/Comic.class
+target/classes/com/comic/Comic$1.class
+target/classes/com/comic/Trail.class
