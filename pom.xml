@@ -109,7 +109,7 @@
         <configuration>
           <configLocation>com/github/ngeor/checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+          <suppressionsLocation>src/main/java/checkstyle-suppressions.xml</suppressionsLocation>
           <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
           <skip>${skipTests}</skip>
         </configuration>
