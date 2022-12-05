@@ -8,3 +8,4 @@ dump/
 target/checkstyle-cachefile
 target/checkstyle-result.xml
 target/checkstyle-checker.xml
+target/checkstyle-suppressions.xml
