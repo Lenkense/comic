@@ -9,3 +9,4 @@ target/checkstyle-cachefile
 target/checkstyle-result.xml
 target/checkstyle-checker.xml
 target/checkstyle-suppressions.xml
+target/comic-1.0-sources.jar
