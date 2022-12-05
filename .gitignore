@@ -5,3 +5,6 @@ target/classes/com/comic/Comic$1.class
 target/classes/com/comic/Trail.class
 *.jpg
 dump/
+target/checkstyle-cachefile
+target/checkstyle-result.xml
+target/checkstyle-checker.xml
