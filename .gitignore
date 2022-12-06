@@ -1,3 +1,4 @@
 target
 *.jpg
 dump
+dependency-reduced-pom.xml
