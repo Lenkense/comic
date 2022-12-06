@@ -97,7 +97,7 @@ public class Trail {
     /**
      *
      */
-    public static Set<Integer> getTrail(BinaryProcessor binary, int x, int y) {
+    private static Set<Integer> getTrail(BinaryProcessor binary, int x, int y) {
         int width = binary.getWidth();
         int height = binary.getHeight();
         int x2 = x;
@@ -156,6 +156,10 @@ public class Trail {
 
     public Set<Integer> get_trail() {
         return trail;
+    }
+
+    public void clear_trail() {
+        this.trail.clear();
     }
 
     public int get_colorTrail() {

@@ -98,6 +98,7 @@ public final class Comic {
         ImagePlus img = new ImagePlus("", example);
         FileSaver fs = new FileSaver(img);
         fs.saveAsJpeg(path + name + ".jpg");
+        img.close();
     }
 
     /**
@@ -117,6 +118,7 @@ public final class Comic {
         ImagePlus img = new ImagePlus("", gray);
         FileSaver fs = new FileSaver(img);
         fs.saveAsJpeg(path + name + "_gray.jpg");
+        img.close();
     }
 
     /**
@@ -185,11 +187,11 @@ public final class Comic {
             minsize *= MIN_LENGTH_RATIO;
 
             ColorProcessor colorProcessor = imgProcessor.convertToColorProcessor();
-            colorProcessor.filterRGB(ColorProcessor.RGB_FIND_EDGES, 0.0);
 
             //Here I have tried convolutions before finding edges
             //colorProcessor.sharpen();
-            //colorProcessor.blurGaussian(2);//PARAMETER
+            //colorProcessor.blurGaussian(0.1);//PARAMETER
+            colorProcessor.filterRGB(ColorProcessor.RGB_FIND_EDGES, 0.0);
 
             ByteProcessor byteProc = convertRGBtoGray(colorProcessor);
 
@@ -224,11 +226,14 @@ public final class Comic {
                                 Trail update = images.get(key);
                                 update.update_count();
                             }
+                        } else {
+                            trail.clear_trail();
                         }
                     }
                 }
             }
 
+            imgPlus.close();
             dir = new File(prefix);
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -237,6 +242,7 @@ public final class Comic {
             ImagePlus img = new ImagePlus("", byteProc);
             FileSaver fs = new FileSaver(img);
             fs.saveAsJpeg(prefix + "gray.jpg");
+            img.close();
 
             try {
                 FileWriter results =
@@ -247,6 +253,7 @@ public final class Comic {
 
                     printTrail(imgProcessor, trail, prefix);
                     printGray(binary, trail, prefix);
+                    trail.clear_trail();
 
                     results.write(String.format("%05d, ", trail.get_id()));
                     results.write(String.format("%013d, ", trail.get_key()));
@@ -259,12 +266,13 @@ public final class Comic {
                     results.write(String.format("%d, ", trail.get_delta()[0]));
                     results.write(String.format("%d, ", trail.get_delta()[1]));
                     results.write(String.format("%d%n", trail.get_count()));
+
                 }
                 results.close();
+                images.clear();
             } catch (IOException e) {
-                // TODO: handle exception
+                System.out.println(e.getMessage());
             }
-
         }
     }
 }
