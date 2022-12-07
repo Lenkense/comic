@@ -202,8 +202,8 @@ public final class Comic {
             //binary.dilate();
             //binary.erode();
 
-            Map<Long, Trail> images =
-                new LinkedHashMap<Long, Trail>();
+            Map<Trail, Trail> images =
+                new LinkedHashMap<Trail, Trail>();
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     if (binary.getPixel(x, y) == Trail.FG) {
@@ -218,12 +218,11 @@ public final class Comic {
                             && trail.get_areaRatio() < MAX_AREA
                             && trail.get_aspectRatio() < MAX_ASPECT_RATIO
                         ) {
-                            long key = trail.get_key();
-                            if (images.get(key) == null) {
+                            if (images.get(trail) == null) {
                                 trail.set_id(images.size());
-                                images.put(key, trail);
+                                images.put(trail, trail);
                             } else {
-                                Trail update = images.get(key);
+                                Trail update = images.get(trail);
                                 update.update_count();
                             }
                         } else {
@@ -248,7 +247,7 @@ public final class Comic {
                 FileWriter results =
                     new FileWriter(prefix + "results.txt");
                 results.write(String.format("%s%n", fileName));
-                for (Map.Entry<Long, Trail> entry: images.entrySet()) {
+                for (Map.Entry<Trail, Trail> entry: images.entrySet()) {
                     Trail trail = entry.getValue();
 
                     printTrail(imgProcessor, trail, prefix);

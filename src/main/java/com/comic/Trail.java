@@ -232,11 +232,6 @@ public class Trail {
         return key;
     }
 
-    /*TODO:
-     * implment class and equals with override
-     * use it in code
-     */
-
     @Override
     public boolean equals(Object o) {
         Trail that = (Trail) o;
