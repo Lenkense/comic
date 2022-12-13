@@ -42,117 +42,6 @@ public final class Comic {
     /**
      *
      */
-    private static ByteProcessor convertRGBtoGray(ColorProcessor processor) {
-        final int width = processor.getWidth();
-        final int height = processor.getHeight();
-        ByteProcessor byteProc = new ByteProcessor(width, height);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int color = processor.get(x, y);
-                int b = (color & RED) >> RED_OFFSET;
-                int g = (color & GREEN) >> GREEN_OFFSET;
-                int r = (color & BLUE) >> BLUE_OFFSET;
-                int grayLevel = MAX_BYTE - (r + g + b) / NUMBER_OF_CHANNELS;
-                byteProc.set(x, y, grayLevel);
-            }
-        }
-        return byteProc;
-    }
-
-    /**
-     *
-     */
-    private static void paintTrail(ColorProcessor example,
-            int x, int y, int value) {
-        final int width = example.getWidth();
-        final int height = example.getHeight();
-        example.set(x, y, value);
-        for (int[] r: Trail.OFFSET) {
-            int x2 = x + r[0];
-            x2 = (x2 < 0) ? 0 : x2;
-            x2 = (x2 > width - 1) ? width - 1 : x2;
-            int y2 = y + r[1];
-            y2 = (y2 < 0) ? 0 : y2;
-            y2 = (y2 > height - 1) ? height - 1 : y2;
-            example.set(x2, y2, value);
-        }
-    }
-
-    /**
-     *
-     */
-    private static void printTrail(ImageProcessor processor,
-            Trail trail, String path) {
-        final int width = processor.getWidth();
-        final int height = processor.getHeight();
-        ColorProcessor example = new ColorProcessor(width, height);
-        for (int j = trail.get_ymin(); j <= trail.get_ymax(); j++) {
-            for (int i = trail.get_xmin(); i <= trail.get_xmax(); i++) {
-                example.set(i, j, processor.get(i, j));
-                if (trail.get_trail().contains(i + j * width)) {
-                    paintTrail(example, i, j, trail.get_colorTrail());
-                }
-            }
-        }
-        String name = String.format("%05d", trail.get_id());
-        ImagePlus img = new ImagePlus("", example);
-        FileSaver fs = new FileSaver(img);
-        fs.saveAsJpeg(path + name + ".jpg");
-        img.close();
-    }
-
-    /**
-     *
-     */
-    private static void printGray(BinaryProcessor processor,
-            Trail trail, String path) {
-        final int width = processor.getWidth();
-        final int height = processor.getHeight();
-        ByteProcessor gray = new ByteProcessor(width, height);
-        for (int j = trail.get_ymin(); j <= trail.get_ymax(); j++) {
-            for (int i = trail.get_xmin(); i <= trail.get_xmax(); i++) {
-                gray.set(i, j, processor.get(i, j));
-            }
-        }
-        String name = String.format("%05d", trail.get_id());
-        ImagePlus img = new ImagePlus("", gray);
-        FileSaver fs = new FileSaver(img);
-        fs.saveAsJpeg(path + name + "_gray.jpg");
-        img.close();
-    }
-
-    /**
-     *
-     */
-    private static BinaryProcessor binarizePercentile(
-        ByteProcessor byteProc, double percentile) {
-        int width = byteProc.getWidth();
-        int height = byteProc.getHeight();
-        int[] histrogram = byteProc.getHistogram();
-        int threshold = 0;
-        int sum = 0;
-        for (int i = 0; i <= MAX_BYTE; i++) {
-            sum += histrogram[i];
-            if (sum > height * width * percentile) {
-                break;
-            }
-            threshold = i;
-        }
-
-        BinaryProcessor binary = new BinaryProcessor(byteProc);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int grayLevel =
-                    (byteProc.get(x, y) < threshold) ? Trail.FG : Trail.BG;
-                binary.set(x, y, grayLevel);
-            }
-        }
-        return binary;
-    }
-
-    /**
-     *
-     */
     public static void main(String[] args) {
         // PARAMETERS
         String outputPath = "dump/";
@@ -183,8 +72,6 @@ public final class Comic {
             ImageProcessor imgProcessor = imgPlus.getProcessor();
             int width = imgProcessor.getWidth();
             int height = imgProcessor.getHeight();
-            int minsize = (width > height) ? width : height;
-            minsize *= MIN_LENGTH_RATIO;
 
             ColorProcessor colorProcessor = imgProcessor.convertToColorProcessor();
 
@@ -195,36 +82,27 @@ public final class Comic {
 
             ByteProcessor byteProc = convertRGBtoGray(colorProcessor);
 
-            BinaryProcessor binary = binarizePercentile(byteProc,
-                                PERCENTILE_THRESHOLD);
+            BinaryProcessor binary = binarize(byteProc);
 
             // Here I have tried morphological operators on binary:
             //binary.dilate();
             //binary.erode();
 
-            Map<Trail, Trail> images =
+            Map<Trail, Trail> trails =
                 new LinkedHashMap<Trail, Trail>();
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     if (binary.getPixel(x, y) == Trail.FG) {
                         Trail trail = new Trail(binary, x, y);
+                        boolean valid = valid(trail);
+                        boolean isNew = trails.get(trail) == null;
 
-                        if (trail.get_delta()[0] * trail.get_delta()[0]
-                            + trail.get_delta()[1] * trail.get_delta()[1]
-                            < MIN_DIST * MIN_DIST
-                            && trail.get_boundingBoxHeight() > minsize
-                            && trail.get_boundingBoxWidth() > minsize
-                            && trail.get_areaRatio() > MIN_AREA
-                            && trail.get_areaRatio() < MAX_AREA
-                            && trail.get_aspectRatio() < MAX_ASPECT_RATIO
-                        ) {
-                            if (images.get(trail) == null) {
-                                trail.set_id(images.size());
-                                images.put(trail, trail);
-                            } else {
-                                Trail update = images.get(trail);
-                                update.update_count();
-                            }
+                        if (valid && isNew) {
+                            trail.set_id(trails.size());
+                            trails.put(trail, trail);
+                        } else if (valid && !isNew) {
+                            Trail update = trails.get(trail);
+                            update.update_count();
                         } else {
                             trail.clear_trail();
                         }
@@ -247,32 +125,165 @@ public final class Comic {
                 FileWriter results =
                     new FileWriter(prefix + "results.txt");
                 results.write(String.format("%s%n", fileName));
-                for (Map.Entry<Trail, Trail> entry: images.entrySet()) {
+                for (Map.Entry<Trail, Trail> entry: trails.entrySet()) {
                     Trail trail = entry.getValue();
 
                     printTrail(imgProcessor, trail, prefix);
                     printGray(binary, trail, prefix);
+                    printResults(results, trail);
                     trail.clear_trail();
-
-                    results.write(String.format("%05d, ", trail.get_id()));
-                    results.write(String.format("%013d, ", trail.get_key()));
-                    results.write(String.format("%d, ", trail.get_boundingBoxWidth()));
-                    results.write(String.format("%d, ", trail.get_boundingBoxHeight()));
-                    results.write(String.format("%f, ", trail.get_widthRatio()));
-                    results.write(String.format("%f, ", trail.get_heightRatio()));
-                    results.write(String.format("%f, ", trail.get_aspectRatio()));
-                    results.write(String.format("%f, ", trail.get_areaRatio()));
-                    results.write(String.format("%d, ", trail.get_delta()[0]));
-                    results.write(String.format("%d, ", trail.get_delta()[1]));
-                    results.write(String.format("%d%n", trail.get_count()));
-
                 }
                 results.close();
-                images.clear();
+                trails.clear();
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
         }
+    }
+
+    /**
+     *
+     */
+    private static ByteProcessor convertRGBtoGray(ColorProcessor processor) {
+        final int width = processor.getWidth();
+        final int height = processor.getHeight();
+        ByteProcessor byteProc = new ByteProcessor(width, height);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int color = processor.get(x, y);
+                int b = (color & RED) >> RED_OFFSET;
+                int g = (color & GREEN) >> GREEN_OFFSET;
+                int r = (color & BLUE) >> BLUE_OFFSET;
+                int grayLevel = MAX_BYTE - (r + g + b) / NUMBER_OF_CHANNELS;
+                byteProc.set(x, y, grayLevel);
+            }
+        }
+        return byteProc;
+    }
+
+    /**
+     *
+     */
+    private static BinaryProcessor binarize(
+        ByteProcessor byteProc) {
+        int width = byteProc.getWidth();
+        int height = byteProc.getHeight();
+        int[] histrogram = byteProc.getHistogram();
+        int threshold = 0;
+        int sum = 0;
+        for (int i = 0; i <= MAX_BYTE; i++) {
+            sum += histrogram[i];
+            if (sum > height * width * PERCENTILE_THRESHOLD) {
+                break;
+            }
+            threshold = i;
+        }
+
+        BinaryProcessor binary = new BinaryProcessor(byteProc);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int grayLevel =
+                    (byteProc.get(x, y) < threshold) ? Trail.FG : Trail.BG;
+                binary.set(x, y, grayLevel);
+            }
+        }
+        return binary;
+    }
+
+    /**
+     *
+     */
+    private static boolean valid(Trail trail) {
+        boolean valid =
+            trail.get_delta()[0] * trail.get_delta()[0]
+            + trail.get_delta()[1] * trail.get_delta()[1]
+            < MIN_DIST * MIN_DIST
+            && trail.get_heightRatio() > MIN_LENGTH_RATIO
+            && trail.get_widthRatio() > MIN_LENGTH_RATIO
+            && trail.get_areaRatio() > MIN_AREA
+            && trail.get_areaRatio() < MAX_AREA
+            && trail.get_aspectRatio() < MAX_ASPECT_RATIO;
+        return valid;
+    }
+
+    /**
+     *
+     */
+    private static void printTrail(ImageProcessor processor,
+            Trail trail, String path) {
+        final int width = processor.getWidth();
+        final int height = processor.getHeight();
+        ColorProcessor example = new ColorProcessor(width, height);
+        for (int j = trail.get_ymin(); j <= trail.get_ymax(); j++) {
+            for (int i = trail.get_xmin(); i <= trail.get_xmax(); i++) {
+                example.set(i, j, processor.get(i, j));
+                if (trail.get_trail().contains(i + j * width)) {
+                    paintTrail(example, i, j, trail.get_colorTrail());
+                }
+            }
+        }
+        String name = String.format("%05d", trail.get_id());
+        ImagePlus img = new ImagePlus("", example);
+        FileSaver fs = new FileSaver(img);
+        fs.saveAsJpeg(path + name + ".jpg");
+        img.close();
+    }
+
+    /**
+     *
+     */
+    private static void paintTrail(ColorProcessor example,
+            int x, int y, int value) {
+        final int width = example.getWidth();
+        final int height = example.getHeight();
+        example.set(x, y, value);
+        for (int[] r: Trail.OFFSET) {
+            int x2 = x + r[0];
+            x2 = (x2 < 0) ? 0 : x2;
+            x2 = (x2 > width - 1) ? width - 1 : x2;
+            int y2 = y + r[1];
+            y2 = (y2 < 0) ? 0 : y2;
+            y2 = (y2 > height - 1) ? height - 1 : y2;
+            example.set(x2, y2, value);
+        }
+    }
+
+    /**
+     *
+     */
+    private static void printGray(BinaryProcessor processor,
+            Trail trail, String path) {
+        final int width = processor.getWidth();
+        final int height = processor.getHeight();
+        ByteProcessor gray = new ByteProcessor(width, height);
+        for (int j = trail.get_ymin(); j <= trail.get_ymax(); j++) {
+            for (int i = trail.get_xmin(); i <= trail.get_xmax(); i++) {
+                gray.set(i, j, processor.get(i, j));
+            }
+        }
+        String name = String.format("%05d", trail.get_id());
+        ImagePlus img = new ImagePlus("", gray);
+        FileSaver fs = new FileSaver(img);
+        fs.saveAsJpeg(path + name + "_gray.jpg");
+        img.close();
+    }
+
+    /**
+     *
+     */
+    private static void printResults(FileWriter results, Trail trail)
+        throws IOException {
+        results.write(String.format("%05d, ", trail.get_id()));
+        results.write(String.format("%013d, ", trail.get_key()));
+        results.write(String.format("%d, ", trail.get_boundingBoxWidth()));
+        results.write(String.format("%d, ", trail.get_boundingBoxHeight()));
+        results.write(String.format("%f, ", trail.get_widthRatio()));
+        results.write(String.format("%f, ", trail.get_heightRatio()));
+        results.write(String.format("%f, ", trail.get_aspectRatio()));
+        results.write(String.format("%f, ", trail.get_areaRatio()));
+        results.write(String.format("%d, ", trail.get_delta()[0]));
+        results.write(String.format("%d, ", trail.get_delta()[1]));
+        results.write(String.format("%d%n", trail.get_count()));
     }
 }
 

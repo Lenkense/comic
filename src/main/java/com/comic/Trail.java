@@ -97,12 +97,12 @@ public class Trail {
     /**
      *
      */
-    private static Set<Integer> getTrail(BinaryProcessor binary, int x, int y) {
+    private static Set<Integer> getTrail(BinaryProcessor binary, int i, int j) {
         int width = binary.getWidth();
         int height = binary.getHeight();
-        int x2 = x;
-        int y2 = y;
-        int element = x2 + y2 * width;
+        int x = i;
+        int y = j;
+        int element = x + y * width;
         Set<Integer> trail = new LinkedHashSet<Integer>();
         boolean test = trail.add(element);
         int last = DEFAULT_NEIGHBOUR;
@@ -110,27 +110,28 @@ public class Trail {
 
         while (test) {
             int next = last;
-            for (int i = 1; i < OFFSET.length; i++) {
-                candidate = (last + i) % OFFSET.length;
+            for (int k = 1; k < OFFSET.length; k++) {
+                candidate = (last + k) % OFFSET.length;
                 if (FG == binary.getPixel(
-                    x2 + OFFSET[candidate][0],
-                    y2 + OFFSET[candidate][1])) {
+                    x + OFFSET[candidate][0],
+                    y + OFFSET[candidate][1])) {
+
                     next = candidate;
                 }
             }
-            candidate = next;
-            x2 += OFFSET[candidate][0];
-            y2 += OFFSET[candidate][1];
+            x += OFFSET[next][0];
+            y += OFFSET[next][1];
 
             // preventing out of bounds
-            x2 = (x2 < 0) ? 0 : x2;
-            x2 = (x2 > width - 1) ? width - 1 : x2;
-            y2 = (y2 < 0) ? 0 : y2;
-            y2 = (y2 > height - 1) ? height - 1 : y2;
+            x = (x < 0) ? 0 : x;
+            x = (x > width - 1) ? width - 1 : x;
+            y = (y < 0) ? 0 : y;
+            y = (y > height - 1) ? height - 1 : y;
 
             // next line is a 180º rotation
-            last = (candidate + OFFSET.length / 2) % OFFSET.length;
-            element = x2 + y2 * width;
+            last = (next + OFFSET.length / 2) % OFFSET.length;
+
+            element = x + y * width;
             test = trail.add(element);
         }
         return trail;
