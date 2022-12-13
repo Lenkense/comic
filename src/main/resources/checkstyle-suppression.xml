@@ -5,12 +5,6 @@
      "https://checkstyle.org/dtds/suppressions_1_0.dtd">
  
 <suppressions>
-<<<<<<< HEAD
-=======
-  <suppress checks="NestedIfDepth"
-            files="Comic.java"
-            lines="221"/>
->>>>>>> 6989494048f21c2a2314d6e931c022961426a037
   <suppress checks="NestedForDepth"
             files="Comic.java"
             lines="94"/>
