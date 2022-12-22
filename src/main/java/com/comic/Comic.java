@@ -76,8 +76,6 @@ public final class Comic {
             ColorProcessor colorProcessor = imgProcessor.convertToColorProcessor();
 
             //Here I have tried convolutions before finding edges
-            //colorProcessor.sharpen();
-            //colorProcessor.blurGaussian(0.1);//PARAMETER
             colorProcessor.filterRGB(ColorProcessor.RGB_FIND_EDGES, 0.0);
 
             ByteProcessor byteProc = convertRGBtoGray(colorProcessor);
@@ -85,8 +83,6 @@ public final class Comic {
             BinaryProcessor binary = binarize(byteProc);
 
             // Here I have tried morphological operators on binary:
-            //binary.dilate();
-            //binary.erode();
 
             Map<Trail, Trail> trails =
                 new LinkedHashMap<Trail, Trail>();

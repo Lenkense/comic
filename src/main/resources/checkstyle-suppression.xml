@@ -7,5 +7,5 @@
 <suppressions>
   <suppress checks="NestedForDepth"
             files="Comic.java"
-            lines="94"/>
+            lines="90"/>
 </suppressions>
